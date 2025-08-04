@@ -1,17 +1,97 @@
+/* Global resets */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body, html {
+  height: 100%;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f4f8;
-    color: #333;
-    text-align: center;
-    padding-top: 100px;
+  background-image: url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1350&q=80');
+  background-size: cover;
+  background-position: center;
+  color: #ffffff;
 }
 
-h1 {
-    font-size: 36px;
-    color: #2c3e50;
+/* Background overlay */
+.overlay {
+  background: rgba(0, 0, 0, 0.65);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-p {
-    font-size: 18px;
-    color: #555;
+/* Main card */
+.container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  padding: 30px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.container h1 {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #cbd5e0;
+  margin-bottom: 20px;
+}
+
+.prompt {
+  font-size: 1rem;
+  margin-bottom: 10px;
+  color: #e2e8f0;
+}
+
+/* Input */
+input[type="text"] {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  margin-bottom: 16px;
+}
+
+/* Button */
+button {
+  width: 100%;
+  padding: 14px;
+  background-color: #4299e1;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #2b6cb0;
+}
+
+/* Status */
+.status {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #f7fafc;
+}
+
+/* Audio */
+audio {
+  margin-top: 16px;
+  width: 100%;
 }
