@@ -14,51 +14,26 @@
       </p>
 
       <p class="prompt">Type anything you'd like me to say out loud:</p>
-
       <input type="text" id="textInput" placeholder="e.g. Hello, how can I help you today?">
       <button onclick="generateAudio()">Generate Voice</button>
 
       <div class="status" id="statusText">Waiting for input...</div>
+      <audio id="audioPlayer" controls style="display: none;"></audio>
 
-      <audio id="audioPlayer" controls style="display:none;"></audio>
+      <!-- Echo Bot Section -->
+      <h1>🔁 Echo Bot</h1>
+      <p class="prompt">Record your voice and hear it back instantly!</p>
+
+      <div class="echo-controls">
+        <button id="startRecording">🎙️ Start Recording</button>
+        <button id="stopRecording" disabled>⏹️ Stop Recording</button>
+      </div>
+
+      <div class="status" id="echoStatus">Echo Bot is idle...</div>
+      <audio id="echoAudio" controls style="display: none;"></audio>
     </div>
   </div>
 
-  <script>
-    async function generateAudio() {
-      const input = document.getElementById("textInput").value.trim();
-      const status = document.getElementById("statusText");
-      const audio = document.getElementById("audioPlayer");
-
-      if (!input) {
-        status.textContent = "Please enter something for me to convert!";
-        return;
-      }
-
-      status.textContent = "Generating voice... hang tight.";
-      audio.style.display = "none";
-
-      try {
-        const response = await fetch("http://localhost:8000/generate-audio/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: input })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.audio_url) {
-          audio.src = data.audio_url;
-          audio.load(); // preload without autoplay
-          audio.style.display = "block";
-          status.textContent = "Voice is ready! Press play to listen. 🎧";
-        } else {
-          status.textContent = "Error: " + (data.detail || "Failed to generate voice.");
-        }
-      } catch (err) {
-        status.textContent = "Something went wrong. Please try again.";
-      }
-    }
-  </script>
+  <script src="/static/script.js"></script>
 </body>
 </html>
