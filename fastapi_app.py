@@ -7,6 +7,9 @@ from pydantic import BaseModel
 import requests
 from dotenv import load_dotenv
 import os
+from fastapi import File, UploadFile
+from fastapi.responses import JSONResponse
+import shutil
 
 # Load environment variables
 load_dotenv()
@@ -73,3 +76,23 @@ async def generate_audio(input_text: InputText):
         raise HTTPException(status_code=400, detail="No audio URL returned")
 
     return {"audio_url": audio_url}
+
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.post("/upload-audio/")
+async def upload_audio(file: UploadFile = File(...)):
+    file_location = os.path.join(UPLOAD_DIR, file.filename)
+
+    try:
+        with open(file_location, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        return {
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "size": os.path.getsize(file_location)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")

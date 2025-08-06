@@ -56,6 +56,14 @@ body {
   color: #e2e8f0;
 }
 
+.echo-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* adds space between the buttons */
+  margin-bottom: 12px; /* optional spacing below */
+}
+
+
 /* Input */
 input[type="text"] {
   width: 100%;

@@ -34,7 +34,6 @@ async function generateAudio() {
   }
 }
 
-
 // ECHO BOT LOGIC
 let mediaRecorder;
 let audioChunks = [];
@@ -58,7 +57,25 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const audioURL = URL.createObjectURL(audioBlob);
         echoAudio.src = audioURL;
         echoAudio.style.display = "block";
-        echoStatus.textContent = "Recording ready. Press play to hear yourself!";
+        echoStatus.textContent = "Uploading your recording...";
+
+        // Upload audio to server
+        const formData = new FormData();
+        formData.append("file", audioBlob, "echo.wav");
+
+        fetch("http://localhost:8000/upload-audio/", {
+          method: "POST",
+          body: formData
+        })
+          .then(response => response.json())
+          .then(data => {
+            echoStatus.textContent = `✅ Upload complete! Name: ${data.filename}, Type: ${data.content_type}, Size: ${data.size} bytes`;
+          })
+          .catch(error => {
+            echoStatus.textContent = "❌ Upload failed.";
+            console.error("Upload error:", error);
+          });
+
         audioChunks = [];
       };
 
