@@ -34,7 +34,7 @@ async function generateAudio() {
   }
 }
 
-// ECHO BOT LOGIC
+// ECHO BOT v2
 let mediaRecorder;
 let audioChunks = [];
 
@@ -54,26 +54,29 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        const audioURL = URL.createObjectURL(audioBlob);
-        echoAudio.src = audioURL;
-        echoAudio.style.display = "block";
-        echoStatus.textContent = "Uploading your recording...";
+        echoStatus.textContent = "Uploading your recording to Echo Bot v2...";
 
-        // Upload audio to server
+        // Send to /tts/echo
         const formData = new FormData();
         formData.append("file", audioBlob, "echo.wav");
 
-        fetch("http://localhost:8000/upload-audio/", {
+        fetch("http://localhost:8000/tts/echo", {
           method: "POST",
           body: formData
         })
           .then(response => response.json())
           .then(data => {
-            echoStatus.textContent = `✅ Upload complete! Name: ${data.filename}, Type: ${data.content_type}, Size: ${data.size} bytes`;
+            if (data.audio_url) {
+              echoAudio.src = data.audio_url;
+              echoAudio.style.display = "block";
+              echoStatus.textContent = `Murf says: "${data.transcription}" 🎤`;
+            } else {
+              echoStatus.textContent = "Failed to get Murf audio.";
+            }
           })
           .catch(error => {
-            echoStatus.textContent = "❌ Upload failed.";
-            console.error("Upload error:", error);
+            echoStatus.textContent = "❌ Echo failed.";
+            console.error("Error:", error);
           });
 
         audioChunks = [];
@@ -88,7 +91,7 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 
       stopBtn.addEventListener("click", () => {
         mediaRecorder.stop();
-        echoStatus.textContent = "Stopping recording...";
+        echoStatus.textContent = "Processing your voice...";
         startBtn.disabled = false;
         stopBtn.disabled = true;
       });
