@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException, File, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,8 +9,7 @@ from dotenv import load_dotenv
 import os
 import shutil
 import uuid
-from fastapi.responses import JSONResponse
-from fastapi import Request
+import time
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +40,8 @@ ASSEMBLY_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 ASSEMBLY_UPLOAD_URL = "https://api.assemblyai.com/v2/upload"
 ASSEMBLY_TRANSCRIBE_URL = "https://api.assemblyai.com/v2/transcript"
 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 # Data model
 class InputText(BaseModel):
     text: str
@@ -137,6 +138,7 @@ async def tts_echo(file: UploadFile = File(...)):
             break
         elif status == "error":
             raise HTTPException(status_code=500, detail="Transcription failed")
+        time.sleep(2)  # Avoid spamming API
 
     # Send transcription to Murf for TTS
     murf_headers = {
@@ -158,6 +160,42 @@ async def tts_echo(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Murf audio generation failed")
 
     return {"audio_url": murf_audio_url, "transcription": text}
+
+# Day 8: LLM Query Endpoint using Google Gemini API
+@app.post("/llm/query")
+async def llm_query(input_text: InputText):
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not found")
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+    params = {
+        "key": GEMINI_API_KEY
+    }
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": input_text.text}
+                ]
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(GEMINI_API_URL, headers=headers, params=params, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        # Extract the model's reply
+        reply = data["candidates"][0]["content"]["parts"][0]["text"]
+        return {"response": reply}
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Gemini API request failed: {str(e)}")
+    except (KeyError, IndexError):
+        raise HTTPException(status_code=500, detail="Unexpected response format from Gemini API")
+
+# Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
