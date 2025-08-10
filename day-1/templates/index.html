@@ -1,39 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>EchoCraft – AI Voice Agent</title>
-  <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoCraft AI Agent</title> 
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="overlay">
-    <div class="container">
-      <h1>🎙️ EchoCraft</h1>
-      <p class="subtitle">
-        Your personal AI voice companion. Powered by <strong>Murf's API</strong> to convert your words into lifelike speech using text-to-speech technology.
-      </p>
+    <div class="main-container">
+        <h1>EchoCraft</h1>
+        <p class="tagline">Your AI companion for voice and text conversations.</p>
+        
+        <!-- Input Mode Switcher -->
+        <div class="input-mode-switcher">
+            <button id="switchToSpeakBtn" class="mode-button active">Voice</button>
+            <button id="switchToTypeBtn" class="mode-button">Text</button>
+        </div>
 
-      <p class="prompt">Type anything you'd like me to say out loud:</p>
-      <input type="text" id="textInput" placeholder="e.g. Hello, how can I help you today?">
-      <button onclick="generateAudio()">Generate Voice</button>
+        <!-- Voice Input Container -->
+        <div id="speakModeContainer">
+            <div class="controls-grid">
+                <button id="startRecording" class="control-button">
+                    <span class="icon record-icon"></span>
+                    Start Recording
+                </button>
+                <button id="stopRecording" class="control-button" disabled>
+                    <span class="icon stop-icon"></span>
+                    Stop Recording
+                </button>
+            </div>
+        </div>
 
-      <div class="status" id="statusText">Waiting for input...</div>
-      <audio id="audioPlayer" controls style="display: none;"></audio>
+        <!-- Text Input Container (Initially Hidden) -->
+        <div id="typeModeContainer" class="hidden">
+            <div class="text-input-area">
+                <textarea id="textQueryInput" placeholder="Type a message..." rows="3"></textarea>
+                <button id="submitTextQuery">Send</button>
+            </div>
+        </div>
 
-      <!-- Echo Bot v2 -->
-      <h1>🔁 Echo Bot v2</h1>
-      <p class="prompt">Record your voice, we'll transcribe it, and Murf will say it back!</p>
-
-      <div class="echo-controls">
-        <button id="startRecording">🎙️ Start Recording</button>
-        <button id="stopRecording" disabled>⏹️ Stop Recording</button>
-      </div>
-
-      <div class="status" id="echoStatus">Echo Bot is idle...</div>
-      <audio id="echoAudio" controls style="display: none;"></audio>
+        <!-- Status Area -->
+        <p id="statusText" class="status-area">Select an input mode to begin.</p>
+        
+        <!-- Results Container (Initially Hidden) -->
+        <div id="resultsContainer" class="results-area hidden">
+            <p id="transcriptionText"></p>
+            <p id="responseText"></p>
+        </div>
     </div>
-  </div>
 
-  <script src="/static/script.js"></script>
+    <script src="/static/script.js"></script>
 </body>
 </html>

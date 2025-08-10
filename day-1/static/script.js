@@ -1,105 +1,159 @@
-// TEXT TO SPEECH LOGIC
-async function generateAudio() {
-  const input = document.getElementById("textInput").value.trim();
-  const status = document.getElementById("statusText");
-  const audio = document.getElementById("audioPlayer");
+document.addEventListener("DOMContentLoaded", () => {
+    // --- DOM Element References ---
+    const switchToSpeakBtn = document.getElementById("switchToSpeakBtn");
+    const switchToTypeBtn = document.getElementById("switchToTypeBtn");
+    const speakModeContainer = document.getElementById("speakModeContainer");
+    const typeModeContainer = document.getElementById("typeModeContainer");
+    const startBtn = document.getElementById("startRecording");
+    const stopBtn = document.getElementById("stopRecording");
+    const textQueryInput = document.getElementById("textQueryInput");
+    const submitTextBtn = document.getElementById("submitTextQuery");
+    const statusText = document.getElementById("statusText");
+    
+    // NEW: Get the container for the results
+    const resultsContainer = document.getElementById("resultsContainer");
+    const transcriptionText = document.getElementById("transcriptionText");
+    const responseText = document.getElementById("responseText");
+    
+    const audioPlayer = new Audio();
+    let mediaRecorder;
+    let audioChunks = [];
 
-  if (!input) {
-    status.textContent = "Please enter something for me to convert!";
-    return;
-  }
-
-  status.textContent = "Generating voice... hang tight.";
-  audio.style.display = "none";
-
-  try {
-    const response = await fetch("http://localhost:8000/generate-audio/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: input })
-    });
-
-    const data = await response.json();
-
-    if (response.ok && data.audio_url) {
-      audio.src = data.audio_url;
-      audio.load();
-      audio.style.display = "block";
-      status.textContent = "Voice is ready! Press play to listen. 🎧";
-    } else {
-      status.textContent = "Error: " + (data.detail || "Failed to generate voice.");
+    // --- Helper function to reset the UI ---
+    function resetUI() {
+        resultsContainer.classList.add('hidden'); // Hide results
+        transcriptionText.textContent = "";
+        responseText.textContent = "";
     }
-  } catch (err) {
-    status.textContent = "Something went wrong. Please try again.";
-  }
-}
 
-// ECHO BOT v2
-let mediaRecorder;
-let audioChunks = [];
+    // --- Mode Switching Logic ---
+    function setInputMode(mode) {
+        const isSpeakMode = mode === 'speak';
+        speakModeContainer.classList.toggle('hidden', !isSpeakMode);
+        typeModeContainer.classList.toggle('hidden', isSpeakMode);
+        switchToSpeakBtn.classList.toggle('active', isSpeakMode);
+        switchToTypeBtn.classList.toggle('active', !isSpeakMode);
+        statusText.textContent = isSpeakMode ? "Press 'Start Recording' to begin." : "Type your message and press send.";
+        resetUI();
+    }
 
-const startBtn = document.getElementById("startRecording");
-const stopBtn = document.getElementById("stopRecording");
-const echoStatus = document.getElementById("echoStatus");
-const echoAudio = document.getElementById("echoAudio");
+    switchToSpeakBtn.addEventListener("click", () => setInputMode('speak'));
+    switchToTypeBtn.addEventListener("click", () => setInputMode('type'));
+    
+    // --- Voice Input Logic ---
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+                mediaRecorder.onstop = () => {
+                    sendAudioToLlm(new Blob(audioChunks, { type: 'audio/wav' }));
+                    audioChunks = [];
+                };
+                startBtn.addEventListener("click", () => {
+                    mediaRecorder.start();
+                    statusText.textContent = "Listening... 🎙️";
+                    resetUI();
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                });
+                stopBtn.addEventListener("click", () => {
+                    mediaRecorder.stop();
+                    statusText.textContent = "Thinking...";
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                });
+            })
+            .catch(err => {
+                speakModeContainer.innerHTML = "<p class='status-area'>Microphone access denied. Please enable it to use speak mode.</p>";
+                setInputMode('type');
+            });
+    }
 
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-      mediaRecorder = new MediaRecorder(stream);
-
-      mediaRecorder.ondataavailable = event => {
-        audioChunks.push(event.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        echoStatus.textContent = "Uploading your recording to Echo Bot v2...";
-
-        // Send to /tts/echo
+    async function sendAudioToLlm(audioBlob) {
         const formData = new FormData();
-        formData.append("file", audioBlob, "echo.wav");
+        formData.append("file", audioBlob, "user_audio.wav");
+        statusText.textContent = "Transcribing and thinking...";
+        try {
+            const response = await fetch("/llm/query", { method: "POST", body: formData });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Failed to process audio.");
+            
+            // Show results
+            resultsContainer.classList.remove('hidden');
+            transcriptionText.textContent = `You said: "${data.transcription}"`;
+            responseText.textContent = data.llm_response;
+            
+            playAudioSequentially(data.audio_urls, () => setInputMode('speak'));
+        } catch (error) {
+            statusText.textContent = `Error: ${error.message}`;
+        }
+    }
 
-        fetch("http://localhost:8000/tts/echo", {
-          method: "POST",
-          body: formData
-        })
-          .then(response => response.json())
-          .then(data => {
-            if (data.audio_url) {
-              echoAudio.src = data.audio_url;
-              echoAudio.style.display = "block";
-              echoStatus.textContent = `Murf says: "${data.transcription}" 🎤`;
-            } else {
-              echoStatus.textContent = "Failed to get Murf audio.";
-            }
-          })
-          .catch(error => {
-            echoStatus.textContent = "❌ Echo failed.";
-            console.error("Error:", error);
-          });
-
-        audioChunks = [];
-      };
-
-      startBtn.addEventListener("click", () => {
-        mediaRecorder.start();
-        echoStatus.textContent = "Recording... 🎙️";
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-      });
-
-      stopBtn.addEventListener("click", () => {
-        mediaRecorder.stop();
-        echoStatus.textContent = "Processing your voice...";
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-      });
-    })
-    .catch(err => {
-      console.error("Microphone access denied:", err);
-      echoStatus.textContent = "Microphone access denied. Please allow access.";
+    // --- Text Input Logic ---
+    submitTextBtn.addEventListener("click", () => {
+        const query = textQueryInput.value.trim();
+        if (query) {
+            resetUI();
+            sendTextToLlm(query);
+        }
     });
-} else {
-  echoStatus.textContent = "Your browser doesn't support audio recording.";
-}
+
+    async function sendTextToLlm(text) {
+        statusText.textContent = "Thinking...";
+        submitTextBtn.disabled = true;
+        textQueryInput.value = "";
+        
+        try {
+            const response = await fetch("/llm/text_query", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Failed to process text.");
+
+            // Show results
+            resultsContainer.classList.remove('hidden');
+            transcriptionText.textContent = `You wrote: "${text}"`;
+            responseText.textContent = data.llm_response;
+            
+            playAudioSequentially(data.audio_urls, () => {
+                setInputMode('type');
+                submitTextBtn.disabled = false;
+            });
+        } catch (error) {
+            statusText.textContent = `Error: ${error.message}`;
+            submitTextBtn.disabled = false;
+        }
+    }
+
+    // --- Shared Audio Player ---
+    function playAudioSequentially(urls, onFinished) {
+        let index = 0;
+        if (!urls || urls.length === 0) {
+            if (onFinished) onFinished();
+            return;
+        }
+        audioPlayer.src = urls[index];
+        statusText.textContent = "Playing response... 🔊";
+        audioPlayer.play();
+        audioPlayer.onended = () => {
+            index++;
+            if (index < urls.length) {
+                audioPlayer.src = urls[index];
+                audioPlayer.play();
+            } else {
+                if (onFinished) onFinished();
+            }
+        };
+        audioPlayer.onerror = () => {
+            statusText.textContent = "Error playing audio.";
+            if (onFinished) onFinished();
+        };
+    }
+    
+    // Set initial state on page load
+    setInputMode('speak');
+});
+  

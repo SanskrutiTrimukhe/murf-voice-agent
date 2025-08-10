@@ -1,105 +1,205 @@
-/* Global resets */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', sans-serif;
-}
-
-body, html {
-  height: 100%;
-}
-
+/* General Body & Background Styling */
 body {
-  background-image: url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1350&q=80');
-  background-size: cover;
-  background-position: center;
-  color: #ffffff;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-image: url('/static/mic.jpg'); 
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff;
 }
 
-/* Background overlay */
-.overlay {
-  background: rgba(0, 0, 0, 0.65);
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Main Frosted Glass Container */
+.main-container {
+    background: rgba(30, 35, 45, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px); 
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
 }
 
-/* Main card */
-.container {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  padding: 30px;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 500px;
-  text-align: center;
+/* Typography */
+h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 25px;
+    color: rgba(255, 255, 255, 0.9);
 }
 
-.container h1 {
-  font-size: 2.2rem;
-  margin-bottom: 10px;
-  color: #fff;
+/* Input Mode Switcher */
+.input-mode-switcher {
+    display: flex;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 4px;
+    margin: 0 auto 25px auto;
 }
 
-.subtitle {
-  font-size: 1rem;
-  color: #cbd5e0;
-  margin-bottom: 20px;
+.mode-button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s ease;
 }
 
-.prompt {
-  font-size: 1rem;
-  margin-bottom: 10px;
-  color: #e2e8f0;
+.mode-button.active {
+    background-color: rgba(70, 80, 100, 0.7);
+    color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.echo-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px; /* adds space between the buttons */
-  margin-bottom: 12px; /* optional spacing below */
+/* Voice Controls Grid */
+.controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
 }
 
-
-/* Input */
-input[type="text"] {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 8px;
-  border: none;
-  font-size: 1rem;
-  margin-bottom: 16px;
+.control-button {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 
-/* Button */
-button {
-  width: 100%;
-  padding: 14px;
-  background-color: #4299e1;
-  border: none;
-  color: #fff;
-  font-size: 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+.control-button:hover {
+    background: rgba(0, 0, 0, 0.4);
 }
 
-button:hover {
-  background-color: #2b6cb0;
+.control-button:disabled {
+    background: rgba(0, 0, 0, 0.15);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
 }
 
-/* Status */
-.status {
-  margin-top: 12px;
-  font-size: 0.9rem;
-  color: #f7fafc;
+.control-button .icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: block;
 }
 
-/* Audio */
-audio {
-  margin-top: 16px;
-  width: 100%;
+.control-button .record-icon {
+    background-color: #ff4d4d;
+}
+
+.control-button .stop-icon {
+    background-color: #e0e0e0;
+    border-radius: 4px; /* Makes it a square */
+}
+
+/* Text Input Area */
+.text-input-area {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#textQueryInput {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: white;
+    padding: 15px;
+    border-radius: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    resize: none;
+    min-height: 80px;
+}
+
+#textQueryInput::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+#submitTextQuery {
+    background: #4A90E2;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#submitTextQuery:hover {
+    background: #357ABD;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.status-area {
+    margin-top: 20px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    min-height: 20px;
+    transition: color 0.3s ease;
+}
+
+.results-area {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.results-area p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+#transcriptionText {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 10px; 
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#responseText {
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.tagline {
+    font-size: 1rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: -15px;
+    margin-bottom: 25px;
 }
