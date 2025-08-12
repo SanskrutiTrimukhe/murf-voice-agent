@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // --- DOM Element References ---
+    // --- DOM Element References (Unchanged) ---
     const switchToSpeakBtn = document.getElementById("switchToSpeakBtn");
     const switchToTypeBtn = document.getElementById("switchToTypeBtn");
     const speakModeContainer = document.getElementById("speakModeContainer");
@@ -13,14 +13,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const transcriptionText = document.getElementById("transcriptionText");
     const responseText = document.getElementById("responseText");
     
-    // --- State Variables ---
+    // --- State Variables (Unchanged) ---
     const audioPlayer = new Audio();
     let mediaRecorder;
     let audioChunks = [];
     let sessionId = null;
 
-    // --- Session Management ---
+    // --- Session Management (Unchanged) ---
     const initializeSession = () => {
+        // ... (function remains the same)
         const params = new URLSearchParams(window.location.search);
         let currentSessionId = params.get('session_id');
 
@@ -33,20 +34,19 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Session ID Initialized:", sessionId);
     };
 
-    // --- Voice Input Logic ---
+    // --- Voice Input Logic (Unchanged) ---
     async function startRecording() {
+        // ... (function remains the same)
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
             
             audioChunks = [];
-            mediaRecorder.ondataavailable = (event) => {
-                audioChunks.push(event.data);
-            };
+            mediaRecorder.ondataavailable = (event) => { audioChunks.push(event.data); };
 
             mediaRecorder.onstop = () => {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                sendAudioToLlm(audioBlob);
+                sendAudioToServer(audioBlob);
                 stream.getTracks().forEach(track => track.stop());
             };
 
@@ -56,100 +56,116 @@ document.addEventListener("DOMContentLoaded", () => {
             statusText.textContent = "Listening... 🎙️";
 
         } catch (error) {
+            // NEW: More specific error handling for microphone access
             console.error("Error accessing microphone:", error);
-            statusText.textContent = "Could not access microphone. Please grant permission.";
+            statusText.textContent = "Could not access microphone. Please grant permission in your browser settings.";
+            playClientSideFallbackAudio("I can't access your microphone. Please grant permission and try again.");
             startBtn.disabled = false;
-            stopBtn.disabled = true;
         }
     }
-
+    
     function stopRecording() {
+        // ... (function remains the same)
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
-            statusText.textContent = "Processing your audio...";
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
         }
     }
 
-    async function sendAudioToLlm(audioBlob) {
-        const formData = new FormData();
-        formData.append("file", audioBlob, "user_audio.webm");
-        statusText.textContent = "Transcribing and thinking...";
-        
+    // --- NEW: Centralized API Call and Error Handling Logic ---
+    async function sendRequest(endpoint, options) {
+        // Reset UI for a new request
+        resultsContainer.classList.add('hidden');
+        startBtn.disabled = true;
+        stopBtn.disabled = true;
+        submitTextBtn.disabled = true;
+        statusText.textContent = "Connecting to the agent...";
+
         try {
-            const response = await fetch(`/agent/chat/${sessionId}`, { method: "POST", body: formData });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || "Failed to process audio.");
-            }
+            const response = await fetch(endpoint, options);
             const data = await response.json();
-            
+
+            if (!response.ok) {
+                // Server returned an error (e.g., 500), but we got a JSON response
+                console.error("API Error Response:", data);
+                handleApiError(data);
+                return;
+            }
+
+            // --- Success Case ---
+            console.log("API Success Response:", data);
             resultsContainer.classList.remove('hidden');
             transcriptionText.textContent = `You said: "${data.transcription}"`;
             responseText.textContent = `Agent says: "${data.llm_response}"`;
             
             const onFinishedPlaying = () => {
+                setInputMode('speak'); // Default back to speak mode
                 statusText.textContent = "Ready. Press 'Start Recording' to speak again.";
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
             };
-            // ------------------------------------------
-
             playAudioSequentially(data.audio_urls, onFinishedPlaying);
 
         } catch (error) {
-            statusText.textContent = `Error: ${error.message}`;
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
+            // Network error or server is down - we won't have a JSON response
+            console.error("Network or Fetch Error:", error);
+            handleApiError({ detail: "Cannot connect to the server. Please check your connection." });
         }
     }
 
-    // --- Text Input Logic ---
-    async function sendTextToLlm(text) {
-        statusText.textContent = "Thinking...";
-        submitTextBtn.disabled = true;
-        textQueryInput.value = "";
-        
-        try {
-            // This correctly calls the conversational text endpoint
-            const response = await fetch(`/agent/chat/text/${sessionId}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text })
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || "Failed to process text.");
-            }
-            const data = await response.json();
+    // --- NEW: Function to handle errors from the API ---
+    function handleApiError(errorData) {
+        statusText.textContent = `Error: ${errorData.detail || "An unknown error occurred."}`;
 
+        // If the server sent a fallback audio, play it.
+        if (errorData.fallback_audio_url) {
+            playAudioSequentially([errorData.fallback_audio_url], () => setInputMode('speak'));
+        } else {
+            // Otherwise, use the browser's voice as a last resort.
+            playClientSideFallbackAudio("I'm having trouble connecting right now. Please try again later.");
+            setInputMode('speak');
+        }
+
+        // If the error response contains the LLM text (e.g., TTS failed), display it
+        if (errorData.llm_response) {
             resultsContainer.classList.remove('hidden');
-            transcriptionText.textContent = `You wrote: "${data.transcription}"`;
-            responseText.textContent = `Agent says: "${data.llm_response}"`;
-            
-            const onFinishedPlaying = () => {
-                setInputMode('type');
-                submitTextBtn.disabled = false;
-            };
-            playAudioSequentially(data.audio_urls, onFinishedPlaying);
-
-        } catch (error) {
-            statusText.textContent = `Error: ${error.message}`;
-            submitTextBtn.disabled = false;
+            transcriptionText.textContent = `You said: "${errorData.transcription}"`;
+            responseText.textContent = `Agent (text only): "${errorData.llm_response}"`;
         }
     }
 
-    // --- Shared Audio Player ---
+    // --- NEW: Client-side only fallback audio generator ---
+    function playClientSideFallbackAudio(message) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(message);
+            window.speechSynthesis.speak(utterance);
+        } else {
+            console.warn("Browser TTS not available for fallback audio.");
+        }
+    }
+
+    // --- Refactored Functions to use the central handler ---
+    function sendAudioToServer(audioBlob) {
+        statusText.textContent = "Processing your audio...";
+        const formData = new FormData();
+        formData.append("file", audioBlob, "user_audio.webm");
+        sendRequest(`/agent/chat/${sessionId}`, { method: "POST", body: formData });
+    }
+
+    function sendTextToServer(text) {
+        statusText.textContent = "Sending your message...";
+        sendRequest(`/agent/chat/text/${sessionId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text })
+        });
+    }
+
+    // --- Audio Player and UI Switching (Mostly Unchanged) ---
     function playAudioSequentially(urls, onFinished) {
+        // ... (function remains the same, but now used for fallbacks too)
         let index = 0;
         if (!urls || urls.length === 0) {
             if (onFinished) onFinished();
             return;
         }
-        
-        startBtn.disabled = true;
-        stopBtn.disabled = true;
         
         audioPlayer.src = urls[index];
         statusText.textContent = "Agent is speaking... 🔊";
@@ -171,23 +187,25 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    // --- UI Mode Switching ---
     function setInputMode(mode) {
+        // ... (function remains the same, but enables buttons at the end)
         const isSpeakMode = mode === 'speak';
         speakModeContainer.classList.toggle('hidden', !isSpeakMode);
         typeModeContainer.classList.toggle('hidden', isSpeakMode);
-        switchToSpeakBtn.classList.toggle('active', isSpeakMode);
-        switchToTypeBtn.classList.toggle('active', !isSpeakMode);
+        // Reset buttons to be ready
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        submitTextBtn.disabled = false;
+        textQueryInput.value = "";
         statusText.textContent = isSpeakMode ? "Press 'Start Recording' to begin." : "Type your message and press send.";
-        resultsContainer.classList.add('hidden');
     }
 
-    // --- Event Listeners ---
+    // --- Event Listeners (Refactored to call new functions) ---
     startBtn.addEventListener('click', startRecording);
     stopBtn.addEventListener('click', stopRecording);
     submitTextBtn.addEventListener("click", () => {
         const query = textQueryInput.value.trim();
-        if (query) sendTextToLlm(query);
+        if (query) sendTextToServer(query);
     });
     switchToSpeakBtn.addEventListener("click", () => setInputMode('speak'));
     switchToTypeBtn.addEventListener("click", () => setInputMode('type'));
