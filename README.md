@@ -21,20 +21,6 @@ EchoCraft is an AI-powered voice assistant that converts text to realistic speec
 
 ---
 
-## 📂 Project Structure
-```plaintext
-MURF-VOICE-AGENT/
-│-- app.py                 # Main FastAPI server
-│-- fastapi_app.py         # API handling logic
-│-- get_voices.py          # Murf API integration
-│-- .env                   # Environment variables (Murf API key)
-│-- uploads/               # Recorded audio storage
-│-- static/                # JS, CSS, images
-│-- templates/             # HTML templates
-│-- README.md               # Project documentation
-
----
-
 ## 🏗 System Architecture
 
 ### Diagram
