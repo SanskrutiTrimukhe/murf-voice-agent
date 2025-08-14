@@ -38,7 +38,7 @@ MURF-VOICE-AGENT/
 ## 🏗 System Architecture
 
 ### Diagram
-![EchoCraft Architecture](assets/echocraft_architecture.png)
+![EchoCraft Architecture](assets/EchoCraft_architecture.png)
 
 ---
 
