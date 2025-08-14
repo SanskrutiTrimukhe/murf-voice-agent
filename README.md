@@ -32,3 +32,61 @@ MURF-VOICE-AGENT/
 │-- static/                # JS, CSS, images
 │-- templates/             # HTML templates
 │-- README.md               # Project documentation
+
+---
+
+## 🏗 System Architecture
+
+### Diagram
+![EchoCraft Architecture](assets/echocraft_architecture.png)
+
+---
+
+### Components
+
+1. **User Interface (UI)**  
+   - Accepts text or voice input.  
+   - Displays conversation history.  
+   - Plays generated audio output.  
+
+2. **Voice Input Handling**  
+   - Captures microphone audio.  
+   - Sends to AssemblyAI for transcription.
+
+3. **Text Input Handling**  
+   - Directly sends typed messages to Gemini API.
+
+4. **AssemblyAI API (Speech-to-Text)**  
+   - Converts voice input to text.  
+
+5. **Gemini API (LLM)**  
+   - Generates intelligent responses based on input and session memory.
+
+6. **Murf API (Text-to-Speech)**  
+   - Converts Gemini's text output into natural-sounding speech.
+
+7. **Session Management**  
+   - Maintains conversation context for each `session_id`.
+
+---
+
+### Working Flow
+
+**Voice Input Path**  
+1. User speaks → Audio recorded.  
+2. Audio → AssemblyAI API → Transcribed text.  
+3. Text → Gemini API → Response text.  
+4. Response → Murf API → Audio output.  
+5. Audio plays in UI.
+
+**Text Input Path**  
+1. User types message.  
+2. Text → Gemini API → Response text.  
+3. Response → Murf API → Audio output.  
+4. Audio plays in UI.
+
+**Memory Management**  
+- Session IDs store past conversation context.  
+- Sent with each request to Gemini API for coherent replies.
+
+---
